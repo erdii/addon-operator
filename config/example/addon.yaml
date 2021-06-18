@@ -14,7 +14,7 @@ spec:
     type: OwnNamespace
     ownNamespace:
       namespace: "foo"
-  catalogSource:
-    # This is the operathub catalog source because (at least for now)
-    # we don't have an example catalog image to develop against
-    image: quay.io/operatorhubio/catalog:latest
+      # This is the operathub catalog source because (at least for now)
+      # we don't have an example catalog image to develop against
+      catalogSourceImage: quay.io/operatorhubio/catalog:latest
+      packageName: "minio-operator"

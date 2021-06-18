@@ -31,24 +31,25 @@ const (
 // stop or retry reconciliation of the surrounding Addon resource
 func (r *AddonReconciler) ensureCatalogSource(
 	ctx context.Context, log logr.Logger, addon *addonsv1alpha1.Addon) (ensureCatalogSourceResult, error) {
-	targetNamespace, catalogSourceImage, stop, err := r.parseAddonInstallConfig(ctx, log, addon)
+	// targetNamespace, catalogSourceImage, stop, err := r.parseAddonInstallConfig(ctx, log, addon)
+	configCtx, err := r.parseAddonInstallConfig(ctx, log, addon)
 	if err != nil {
 		return ensureCatalogSourceResultNil, err
 	}
-	if stop {
+	if configCtx.stop {
 		return ensureCatalogSourceResultStop, nil
 	}
 
 	catalogSource := &operatorsv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      addon.Name,
-			Namespace: targetNamespace,
+			Namespace: configCtx.targetNamespace,
 		},
 		Spec: operatorsv1alpha1.CatalogSourceSpec{
 			SourceType:  operatorsv1alpha1.SourceTypeGrpc,
 			Publisher:   catalogSourcePublisher,
 			DisplayName: addon.Spec.DisplayName,
-			Image:       catalogSourceImage,
+			Image:       configCtx.catalogSourceImage,
 		},
 	}
 

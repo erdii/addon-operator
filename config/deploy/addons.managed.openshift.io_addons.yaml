@@ -57,9 +57,14 @@ spec:
                         description: Namespace to install the Addon into.
                         minLength: 1
                         type: string
+                      packageName:
+                        description: 'Defines the OLM package name to install TODO: Should this be configurable or hard-wired to addon.Name? TODO: ^ can an addon be installed multiple times?'
+                        minLength: 1
+                        type: string
                     required:
                     - catalogSourceImage
                     - namespace
+                    - packageName
                     type: object
                   ownNamespace:
                     description: OwnNamespace config parameters. Present only if Type = OwnNamespace.
@@ -72,9 +77,14 @@ spec:
                         description: Namespace to install the Addon into.
                         minLength: 1
                         type: string
+                      packageName:
+                        description: 'Defines the OLM package name to install TODO: Should this be configurable or hard-wired to addon.Name? TODO: ^ can an addon be installed multiple times?'
+                        minLength: 1
+                        type: string
                     required:
                     - catalogSourceImage
                     - namespace
+                    - packageName
                     type: object
                   type:
                     description: Type of installation.

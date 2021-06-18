@@ -15,26 +15,26 @@ import (
 	addonsv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 )
 
-// Ensures the presense or absense of an OperatorGroup depending on the Addon install type.
+// Ensures the presence or absence of an OperatorGroup depending on the Addon install type.
 func (r *AddonReconciler) ensureOperatorGroup(
 	ctx context.Context, log logr.Logger, addon *addonsv1alpha1.Addon) (stop bool, err error) {
-	targetNamespace, _, stop, err := r.parseAddonInstallConfig(ctx, log, addon)
+	configCtx, err := r.parseAddonInstallConfig(ctx, log, addon)
 	if err != nil {
 		return false, err
 	}
-	if stop {
+	if configCtx.stop {
 		return true, nil
 	}
 
 	desiredOperatorGroup := &operatorsv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      addon.Name,
-			Namespace: targetNamespace,
+			Namespace: configCtx.targetNamespace,
 			Labels:    map[string]string{},
 		},
 	}
 	if addon.Spec.Install.Type == addonsv1alpha1.OwnNamespace {
-		desiredOperatorGroup.Spec.TargetNamespaces = []string{targetNamespace}
+		desiredOperatorGroup.Spec.TargetNamespaces = []string{configCtx.targetNamespace}
 	}
 
 	addCommonLabels(desiredOperatorGroup.Labels, addon)
@@ -46,7 +46,6 @@ func (r *AddonReconciler) ensureOperatorGroup(
 }
 
 // Reconciles the Spec of the given OperatorGroup if needed by updating or creating the OperatorGroup.
-// The given OperatorGroup is updated to reflect the latest state from the kube-apiserver.
 func (r *AddonReconciler) reconcileOperatorGroup(
 	ctx context.Context, operatorGroup *operatorsv1.OperatorGroup) error {
 	currentOperatorGroup := &operatorsv1.OperatorGroup{}

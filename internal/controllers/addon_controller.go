@@ -105,6 +105,17 @@ func (r *AddonReconciler) Reconcile(
 		}
 	}
 
+	// Phase 5.
+	{
+		stop, err := r.ensureSubscription(ctx, log, addon)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to ensure Subscription: %w", err)
+		}
+		if stop {
+			return ctrl.Result{}, nil
+		}
+	}
+
 	// After last phase and if everything is healthy
 	err = r.reportReadinessStatus(ctx, addon)
 	if err != nil {

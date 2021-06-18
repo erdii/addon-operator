@@ -43,6 +43,12 @@ type AddonInstallCommon struct {
 	// Please only use hashes and no tags here!
 	// +kubebuilder:validation:MinLength=1
 	CatalogSourceImage string `json:"catalogSourceImage"`
+
+	// Defines the OLM package name to install
+	// TODO: Should this be configurable or hard-wired to addon.Name?
+	// TODO: ^ can an addon be installed multiple times?
+	// +kubebuilder:validation:MinLength=1
+	PackageName string `json:"packageName"`
 }
 
 // AllNamespaces specific Addon installation parameters.
@@ -90,6 +96,8 @@ type AddonStatus struct {
 	// it will go away as soon as kubectl can print conditions!
 	// Human readable status - please use .Conditions from code
 	Phase AddonPhase `json:"phase,omitempty"`
+
+	// OLMInstallPlanRef *corev1.ObjectReference
 }
 
 type AddonPhase string
