@@ -1,0 +1,12 @@
+apiVersion: miniocontroller.min.io/v1alpha1
+kind: MinIOInstance
+metadata:
+  name: example-addon
+spec:
+  replicas: 1
+    apiVersion: operators.coreos.com/v1alpha1
+    kind: InstallPlan
+    name: install-hf2rp
+    namespace: foo
+    resourceVersion: "54004"
+    uid: 73e453b3-1882-491f-bf92-91b198956f02

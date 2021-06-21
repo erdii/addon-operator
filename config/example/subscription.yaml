@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: example-addon
+  namespace: foo
+spec:
+  channel: stable
+  name: eclipse-che
+  source: example-addon
+  sourceNamespace: foo
+  installPlanApproval: Automatic
