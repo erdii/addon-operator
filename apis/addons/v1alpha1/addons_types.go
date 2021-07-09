@@ -25,16 +25,16 @@ type AddonSpec struct {
 // AddonInstallSpec defines the desired Addon installation type.
 type AddonInstallSpec struct {
 	// Type of installation.
-	// +kubebuilder:validation:Enum={"OLMOwnNamespace","OLMAllNamespaces"}
+	// +kubebuilder:validation:Enum={"OwnNamespace","AllNamespaces"}
 	Type AddonInstallType `json:"type"`
-	// AllNamespaces config parameters. Present only if Type = OLMAllNamespaces.
-	OLMAllNamespaces *AddonInstallOLMAllNamespaces `json:"OLMAllNamespaces,omitempty"`
-	// OwnNamespace config parameters. Present only if Type = OLMOwnNamespace.
-	OLMOwnNamespace *AddonInstallOLMOwnNamespace `json:"OLMOwnNamespace,omitempty"`
+	// AllNamespaces config parameters. Present only if Type = AllNamespaces.
+	AllNamespaces *AddonInstallAllNamespaces `json:"allNamespaces,omitempty"`
+	// OwnNamespace config parameters. Present only if Type = OwnNamespace.
+	OwnNamespace *AddonInstallOwnNamespace `json:"ownNamespace,omitempty"`
 }
 
 // Common Addon installation parameters.
-type AddonInstallOLMCommon struct {
+type AddonInstallCommon struct {
 	// Namespace to install the Addon into.
 	// +kubebuilder:validation:MinLength=1
 	Namespace string `json:"namespace"`
@@ -46,13 +46,13 @@ type AddonInstallOLMCommon struct {
 }
 
 // AllNamespaces specific Addon installation parameters.
-type AddonInstallOLMAllNamespaces struct {
-	AddonInstallOLMCommon `json:",inline"`
+type AddonInstallAllNamespaces struct {
+	AddonInstallCommon `json:",inline"`
 }
 
 // OwnNamespace specific Addon installation parameters.
-type AddonInstallOLMOwnNamespace struct {
-	AddonInstallOLMCommon `json:",inline"`
+type AddonInstallOwnNamespace struct {
+	AddonInstallCommon `json:",inline"`
 }
 
 type AddonInstallType string
@@ -62,11 +62,11 @@ const (
 	// installs the Operator in the default openshift-operators namespace to
 	// watch and be made available to all namespaces in the cluster.
 	// Maps directly to the OLM default install mode "all namespaces".
-	OLMAllNamespaces AddonInstallType = "OLMAllNamespaces"
+	AllNamespaces AddonInstallType = "AllNamespaces"
 	// Installs the operator into a specific namespace.
 	// The Operator will only watch and be made available for use in this single namespace.
 	// Maps directly to the OLM install mode "specific namespace"
-	OLMOwnNamespace AddonInstallType = "OLMOwnNamespace"
+	OwnNamespace AddonInstallType = "OwnNamespace"
 )
 
 type AddonNamespace struct {

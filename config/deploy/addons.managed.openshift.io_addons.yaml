@@ -46,8 +46,8 @@ spec:
               install:
                 description: 'Defines how an Addon is installed. This field is immutable. TODO: enforce immutablity in webhook'
                 properties:
-                  OLMAllNamespaces:
-                    description: AllNamespaces config parameters. Present only if Type = OLMAllNamespaces.
+                  allNamespaces:
+                    description: AllNamespaces config parameters. Present only if Type = AllNamespaces.
                     properties:
                       catalogSourceImage:
                         description: Defines the CatalogSource image. Please only use hashes and no tags here!
@@ -61,8 +61,8 @@ spec:
                     - catalogSourceImage
                     - namespace
                     type: object
-                  OLMOwnNamespace:
-                    description: OwnNamespace config parameters. Present only if Type = OLMOwnNamespace.
+                  ownNamespace:
+                    description: OwnNamespace config parameters. Present only if Type = OwnNamespace.
                     properties:
                       catalogSourceImage:
                         description: Defines the CatalogSource image. Please only use hashes and no tags here!
@@ -79,8 +79,8 @@ spec:
                   type:
                     description: Type of installation.
                     enum:
-                    - OLMOwnNamespace
-                    - OLMAllNamespaces
+                    - OwnNamespace
+                    - AllNamespaces
                     type: string
                 required:
                 - type
