@@ -56,11 +56,25 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
+# github.com/openshift/api v0.0.0-20210216211028-bb81baaf35cd
+github.com/openshift/api/config/v1
+# github.com/openshift/hive/apis v0.0.0-20210823153512-6cfe97689937
+## explicit
+github.com/openshift/hive/apis/hive/v1
+github.com/openshift/hive/apis/hive/v1/agent
+github.com/openshift/hive/apis/hive/v1/aws
+github.com/openshift/hive/apis/hive/v1/azure
+github.com/openshift/hive/apis/hive/v1/baremetal
+github.com/openshift/hive/apis/hive/v1/gcp
+github.com/openshift/hive/apis/hive/v1/openstack
+github.com/openshift/hive/apis/hive/v1/ovirt
+github.com/openshift/hive/apis/hive/v1/vsphere
+github.com/openshift/hive/apis/scheme
 # github.com/operator-framework/api v0.8.1
 ## explicit
-github.com/operator-framework/api/pkg/operators/v1
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/operators
+github.com/operator-framework/api/pkg/operators/v1
 github.com/operator-framework/api/pkg/operators/v1alpha1
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
