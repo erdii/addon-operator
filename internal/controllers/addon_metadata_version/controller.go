@@ -3,6 +3,7 @@ package addon_metadata_version
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
@@ -13,7 +14,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	addonsv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
-	"github.com/openshift/addon-operator/internal/apihelpers"
+	addonsv1alpha1helpers "github.com/openshift/addon-operator/internal/apihelpers/addons/v1alpha1"
 )
 
 type AddonMetadataVersionReconciler struct {
@@ -28,6 +29,26 @@ func (r *AddonMetadataVersionReconciler) SetupWithManager(mgr ctrl.Manager) erro
 		Complete(r)
 }
 
+type amvValidator interface {
+	Validate(amv *addonsv1alpha1.AddonMetadataVersion) error
+}
+
+type multiError struct {
+	Errs []error
+}
+
+func (e multiError) Error() string {
+	buf := &strings.Builder{}
+	fmt.Fprintf(buf, "multiple errors:\n")
+	for _, e := range e.Errs {
+		buf.WriteString("  ")
+		buf.WriteString(e.Error())
+		buf.WriteString("\n")
+	}
+
+	return buf.String()
+}
+
 // AddonMetadataVersionReconciler/Controller entrypoint
 func (r *AddonMetadataVersionReconciler) Reconcile(
 	ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -40,9 +61,25 @@ func (r *AddonMetadataVersionReconciler) Reconcile(
 	}
 	log.Info("reconcile", "amv", amv)
 
-	addonName, addonVersion, err := apihelpers.SplitAddonMetadataVersionName(amv.Name)
+	addonName, addonVersion, err := addonsv1alpha1helpers.SplitAddonMetadataVersionName(amv.Name)
 	if err != nil {
 		return ctrl.Result{}, err
+	}
+
+	validators := []amvValidator{
+		&addonsv1alpha1helpers.CVSValidator{},
+	}
+
+	var validationErrors []error
+	for _, validator := range validators {
+		if err := validator.Validate(amv); err != nil {
+			validationErrors = append(validationErrors, err)
+		}
+	}
+	if len(validationErrors) != 0 {
+		return ctrl.Result{}, multiError{
+			Errs: validationErrors,
+		}
 	}
 
 	// TODO: validation

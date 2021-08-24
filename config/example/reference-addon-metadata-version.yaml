@@ -17,3 +17,43 @@ spec:
           packageName: reference-addon
           channel: alpha
           catalogSourceImage: quay.io/osd-addons/reference-addon-index@sha256:58cb1c4478a150dc44e6c179d709726516d84db46e4e130a5227d8b76456b5bd
+---
+apiVersion: addons.managed.openshift.io/v1alpha1
+kind: AddonMetadataEnvironment
+metadata:
+  name: reference-addon
+spec:
+  # immutable env field
+  env: stage
+  versionRef:
+    kind: AddonMetadataVersion
+    name: reference-addon.v0.0.1
+status:
+  conditions:
+  - type: Available
+    value: True
+    reason: "Synced to all hive shards"
+---
+apiVersion: addons.managed.openshift.io/v1alpha1
+kind: AddonMetadata
+metadata:
+  name: reference-addon
+spec:
+  envs:
+    stage:
+      versionRef:
+        kind: AddonMetadataVersion
+        name: reference-addon.v0.0.2
+    prod:
+      versionRef:
+        kind: AddonMetadataVersion
+        name: reference-addon.v0.0.1
+status:
+  envs:
+    stage: #...
+    prod: #...
+  # ???
+  conditions:
+  - type: Available
+    value: True
+    reason: "Synced to all hive shards"
