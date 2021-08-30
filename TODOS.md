@@ -8,9 +8,6 @@
   - we could keep that with argocd BUT then visibility on status-reporting is lost again
 
 # resolution draft:
-
-- have addonMetada
-
 # TODOS:
 
 - validate AddonMetadataVersion
@@ -28,8 +25,7 @@
 
 - apply current AddonMetadataVersion to hive
 
-
-
+# migration notes
 
 Requirements:
 - all OLM resources MUST stay intact
