@@ -46,6 +46,11 @@ spec:
                 required:
                 - type
                 type: object
+              icon:
+                description: Icon to be shown in GUIs
+                type: string
+              indexImage:
+                type: string
               template:
                 description: Template for addon object rendered into the output
                 properties:
@@ -137,6 +142,8 @@ spec:
                 type: object
             required:
             - deletionStrategy
+            - icon
+            - indexImage
             - template
             type: object
           status:

@@ -35,5 +35,36 @@ func (r *AddonMetadataReconciler) Reconcile(
 	}
 	log.Info("reconcile", "addonmeta", addonmeta)
 
+	// sss := &hivev1.SelectorSyncSet{
+	// 	ObjectMeta: v1.ObjectMeta{
+	// 		GenerateName: fmt.Sprintf("%s-", addonName),
+	// 		Namespace:    "TODO",
+	// 		Labels: map[string]string{
+	// 			"todo/addon-name":    addonName,
+	// 			"todo/addon-version": addonVersion,
+	// 		},
+	// 	},
+	// 	Spec: hivev1.SelectorSyncSetSpec{
+	// 		SyncSetCommonSpec: hivev1.SyncSetCommonSpec{
+	// 			Resources: []runtime.RawExtension{
+	// 				{Object: &addonsv1alpha1.Addon{
+	// 					ObjectMeta: v1.ObjectMeta{
+	// 						Name: addonName,
+	// 					},
+	// 					Spec: amv.Spec.Template.Spec,
+	// 				}},
+	// 			},
+	// 		},
+	// 	},
+	// }
+
+	// bytes, err := yaml.Marshal(sss)
+	// if err != nil {
+	// 	return ctrl.Result{}, fmt.Errorf("could not marshall sss. %w", err)
+	// }
+
+	// log.Info("output", "sss", sss)
+	// fmt.Println(string(bytes))
+
 	return ctrl.Result{}, nil
 }

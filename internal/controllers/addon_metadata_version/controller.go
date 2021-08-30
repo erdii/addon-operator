@@ -2,16 +2,13 @@ package addon_metadata_version
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/go-logr/logr"
-	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	addonsv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 	addonsv1alpha1helpers "github.com/openshift/addon-operator/internal/apihelpers/addons/v1alpha1"
@@ -30,23 +27,7 @@ func (r *AddonMetadataVersionReconciler) SetupWithManager(mgr ctrl.Manager) erro
 }
 
 type amvValidator interface {
-	Validate(amv *addonsv1alpha1.AddonMetadataVersion) error
-}
-
-type multiError struct {
-	Errs []error
-}
-
-func (e multiError) Error() string {
-	buf := &strings.Builder{}
-	fmt.Fprintf(buf, "multiple errors:\n")
-	for _, e := range e.Errs {
-		buf.WriteString("  ")
-		buf.WriteString(e.Error())
-		buf.WriteString("\n")
-	}
-
-	return buf.String()
+	Validate(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition
 }
 
 // AddonMetadataVersionReconciler/Controller entrypoint
@@ -61,73 +42,40 @@ func (r *AddonMetadataVersionReconciler) Reconcile(
 	}
 	log.Info("reconcile", "amv", amv)
 
-	addonName, addonVersion, err := addonsv1alpha1helpers.SplitAddonMetadataVersionName(amv.Name)
-	if err != nil {
-		return ctrl.Result{}, err
+	validators := map[string]amvValidator{
+		"CVSValid":        &addonsv1alpha1helpers.CVSValidator{},
+		"IconValid":       &addonsv1alpha1helpers.IconValidator{},
+		"IndexImageValid": &addonsv1alpha1helpers.IndexImageValidator{},
 	}
 
-	validators := []amvValidator{
-		&addonsv1alpha1helpers.CVSValidator{},
-	}
-
-	var validationErrors []error
-	for _, validator := range validators {
-		if err := validator.Validate(amv); err != nil {
-			validationErrors = append(validationErrors, err)
+	newConditions := false
+	for conditionType, _ := range validators {
+		condition := meta.FindStatusCondition(amv.Status.Conditions, conditionType)
+		if condition == nil {
+			meta.SetStatusCondition(&amv.Status.Conditions, metav1.Condition{
+				Type:    conditionType,
+				Status:  metav1.ConditionUnknown,
+				Reason:  "ValidationPending",
+				Message: "Validators have yet to run.",
+			})
+			newConditions = true
 		}
 	}
-	if len(validationErrors) != 0 {
-		return ctrl.Result{}, multiError{
-			Errs: validationErrors,
+	if newConditions {
+		return ctrl.Result{
+			Requeue: true,
+		}, r.Status().Update(ctx, amv)
+	}
+
+	for conditionType, validator := range validators {
+		// No need to check for nil values because to previous step ensures that all conditions are present
+		condition := meta.FindStatusCondition(amv.Status.Conditions, conditionType)
+		if condition.ObservedGeneration == amv.Generation {
+			continue
 		}
+		updatedCondition := validator.Validate(ctx, conditionType, amv)
+		meta.SetStatusCondition(&amv.Status.Conditions, updatedCondition)
 	}
 
-	// TODO: validation
-
-	sss := &hivev1.SelectorSyncSet{
-		ObjectMeta: v1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", addonName),
-			Namespace:    "TODO",
-			Labels: map[string]string{
-				"todo/addon-name":    addonName,
-				"todo/addon-version": addonVersion,
-			},
-		},
-		Spec: hivev1.SelectorSyncSetSpec{
-			SyncSetCommonSpec: hivev1.SyncSetCommonSpec{
-				Resources: []runtime.RawExtension{
-					{Object: &addonsv1alpha1.Addon{
-						ObjectMeta: v1.ObjectMeta{
-							Name: addonName,
-						},
-						Spec: amv.Spec.Template.Spec,
-					}},
-				},
-			},
-		},
-	}
-
-	bytes, err := yaml.Marshal(sss)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("could not marshall sss. %w", err)
-	}
-
-	log.Info("output", "sss", sss)
-	fmt.Println(string(bytes))
-
-	switch amv.Spec.DeletionStrategy.Type {
-	case addonsv1alpha1.AddonDeletionStrategyWonky:
-		// TODO: create another sss with deletion flow stuff
-	default:
-		return ctrl.Result{}, fmt.Errorf("unknown DeletionStrategyType: %s", amv.Spec.DeletionStrategy.Type)
-	}
-
-	// How to hand the generated SSSs over to hive?
-	// Options:
-	// a) hand over to another controller (and selectively bubble status up into this resource)
-	// b) generate clients for all hive shards and apply them here
-	//
-	// Separation of concerns vs simplicity?
-
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, r.Status().Update(ctx, amv)
 }
