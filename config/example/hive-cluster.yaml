@@ -1,0 +1,10 @@
+apiVersion: addons.managed.openshift.io/v1alpha1
+kind: HiveCluster
+metadata:
+  name: example
+spec:
+  apiURL: https://example.com:6443/
+  kubeconfigSecretRef:
+    kind: Secret
+    name: example-kubeconfig
+

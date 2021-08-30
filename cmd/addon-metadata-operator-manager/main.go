@@ -15,7 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	aoapis "github.com/openshift/addon-operator/apis"
+	addonmetactrl "github.com/openshift/addon-operator/internal/controllers/addon_metadata"
 	amvctrl "github.com/openshift/addon-operator/internal/controllers/addon_metadata_version"
+	hivectrl "github.com/openshift/addon-operator/internal/controllers/hive_cluster"
 )
 
 var (
@@ -92,6 +94,24 @@ func main() {
 			setupLog.Error(err, "unable to create pprof server")
 			os.Exit(1)
 		}
+	}
+
+	if err = (&hivectrl.HiveClusterReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("HiveCluster"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HiveCluster")
+		os.Exit(1)
+	}
+
+	if err = (&addonmetactrl.AddonMetadataReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("AddonMetadata"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AddonMetadata")
+		os.Exit(1)
 	}
 
 	if err = (&amvctrl.AddonMetadataVersionReconciler{
