@@ -1,0 +1,9 @@
+apiVersion: addons.managed.openshift.io/v1alpha1
+kind: RemoteCluster
+metadata:
+  name: hive
+spec:
+  kubeconfigSecret:
+    name: hive-kubeconfig
+    namespace: default
+  resyncInterval: 1m

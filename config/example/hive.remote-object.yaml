@@ -1,0 +1,15 @@
+apiVersion: addons.managed.openshift.io/v1alpha1
+kind: RemoteObject
+metadata:
+  name: foo
+  namespace: cluster-hive
+spec:
+  availabilityProbe:
+    type: Conidtion
+    condition:
+      type: Available
+  object:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: foo-test

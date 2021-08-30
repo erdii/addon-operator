@@ -15,7 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	aoapis "github.com/openshift/addon-operator/apis"
+	"github.com/openshift/addon-operator/internal/cache"
 	amvctrl "github.com/openshift/addon-operator/internal/controllers/addon_metadata_version"
+	rcctrl "github.com/openshift/addon-operator/internal/controllers/remote_cluster"
+	roctrl "github.com/openshift/addon-operator/internal/controllers/remote_object"
 )
 
 var (
@@ -100,6 +103,30 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AddonMetadataVersion")
+		os.Exit(1)
+	}
+
+	clientCache := cache.NewClientCache()
+
+	if err = (&rcctrl.RemoteClusterReconciler{
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("RemoteCluster"),
+		Scheme:      mgr.GetScheme(),
+		ClientCache: clientCache,
+		Recorder:    mgr.GetEventRecorderFor("remotecluster"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "RemoteCluster")
+		os.Exit(1)
+	}
+
+	if err = (&roctrl.RemoteObjectReconciler{
+		Client:      mgr.GetClient(),
+		Log:         ctrl.Log.WithName("controllers").WithName("RemoteObject"),
+		Scheme:      mgr.GetScheme(),
+		ClientCache: clientCache,
+		Recorder:    mgr.GetEventRecorderFor("remoteobject"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "RemoteObject")
 		os.Exit(1)
 	}
 

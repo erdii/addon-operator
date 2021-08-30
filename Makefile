@@ -34,6 +34,7 @@ export PATH:=$(DEPENDENCY_BIN):$(PATH)
 # Config
 KIND_KUBECONFIG_DIR:=.cache/integration
 KIND_KUBECONFIG:=$(KIND_KUBECONFIG_DIR)/kubeconfig
+HIVE_KIND_KUBECONFIG:=$(KIND_KUBECONFIG_DIR)/hive-kubeconfig
 export KUBECONFIG?=$(abspath $(KIND_KUBECONFIG))
 export GOLANGCI_LINT_CACHE=$(abspath .cache/golangci-lint)
 export SKIP_TEARDOWN?=
@@ -292,6 +293,52 @@ delete-kind-cluster: $(KIND)
 	) 2>&1 | sed 's/^/  /'
 .PHONY: delete-kind-cluster
 
+## Creates an empty kind cluster to be used for local development.
+create-hive-kind-cluster: $(KIND)
+	@echo "creating kind cluster hive-$(KIND_CLUSTER_NAME)..."
+	@mkdir -p .cache/integration
+	@(source hack/determine-container-runtime.sh; \
+		mkdir -p $(KIND_KUBECONFIG_DIR); \
+		$$KIND_COMMAND create cluster \
+			--kubeconfig=$(HIVE_KIND_KUBECONFIG) \
+			--name=hive-$(KIND_CLUSTER_NAME); \
+		if [[ ! -O "$(HIVE_KIND_KUBECONFIG)" ]]; then \
+			sudo chown $$USER: "$(HIVE_KIND_KUBECONFIG)"; \
+		fi; \
+		echo; \
+	) 2>&1 | sed 's/^/  /'
+.PHONY: create-hive-kind-cluster
+
+## Deletes the previously created kind cluster.
+delete-hive-kind-cluster: $(KIND)
+	@echo "deleting kind cluster hive-$(KIND_CLUSTER_NAME)..."
+	@(source hack/determine-container-runtime.sh; \
+		$$KIND_COMMAND delete cluster \
+			--kubeconfig="$(HIVE_KIND_KUBECONFIG)" \
+			--name=hive-$(KIND_CLUSTER_NAME); \
+		rm -rf "$(HIVE_KIND_KUBECONFIG)"; \
+		echo; \
+	) 2>&1 | sed 's/^/  /'
+.PHONY: delete-hive-kind-cluster
+
+KIND_HIVE_INTERNAL_KUBECONFIG := $(KIND_KUBECONFIG_DIR)/hive-internal.kubeconfig
+$(KIND_HIVE_INTERNAL_KUBECONFIG):
+	@(source hack/determine-container-runtime.sh; \
+		$$KIND_COMMAND get kubeconfig --internal \
+			--name=hive-$(KIND_CLUSTER_NAME) \
+			> $(KIND_HIVE_INTERNAL_KUBECONFIG); \
+		echo; \
+	) 2>&1 | sed 's/^/  /'
+
+adopt-hive-cluster: export KUBECONFIG=$(abspath $(KIND_KUBECONFIG))
+adopt-hive-cluster: $(YQ) $(KIND_HIVE_INTERNAL_KUBECONFIG)
+	@export HIVE_IP=$$(sudo podman inspect hive-addon-operator-control-plane | jq -r '.[0].NetworkSettings.Networks["kind"].IPAddress'); \
+	export HIVE_KUBECONFIG=$$(cat $(KIND_HIVE_INTERNAL_KUBECONFIG) | yq e ".clusters[0].cluster.server = \"https://$$HIVE_IP:6443\"" - | base64 -w 0); \
+		cat config/example/hive-kubeconfig.secret.yaml \
+		| yq e '.data.kubeconfig = strenv(HIVE_KUBECONFIG)' - \
+		| kubectl apply -f -
+	@kubectl apply -f config/example/hive.remote-cluster.yaml
+
 ## Setup OLM into the currently selected cluster.
 setup-olm:
 	@echo "installing OLM $(OLM_VERSION)..."
@@ -328,10 +375,10 @@ config/deploy/deployment.yaml: FORCE $(YQ)
 
 ## Loads and installs the Addon Operator into the currently selected cluster.
 setup-addon-operator: $(YQ) load-addon-operator config/deploy/deployment.yaml
-	@echo "installing Addon Operator $(VERSION)..."
+	@echo "installing Addon Op0erator $(VERSION)..."
 	@(source hack/determine-container-runtime.sh; \
 		kubectl apply -f config/deploy; \
-		echo -e "\nwaiting for deployment/addon-operator..."; \
+		echo -e "\nwaiting for deployment/addon-operator..."; \''
 		kubectl wait --for=condition=available deployment/addon-operator -n addon-operator --timeout=240s; \
 		echo; \
 	) 2>&1 | sed 's/^/  /'
