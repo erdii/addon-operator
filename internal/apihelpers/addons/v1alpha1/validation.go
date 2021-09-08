@@ -11,21 +11,7 @@ import (
 	addonsv1alpha1 "github.com/openshift/addon-operator/apis/addons/v1alpha1"
 )
 
-type CVSValidator struct{}
-
-func (v *CVSValidator) Validate(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition {
-	return metav1.Condition{
-		Type:               conditionType,
-		Status:             metav1.ConditionUnknown,
-		Reason:             "Unimplemented",
-		ObservedGeneration: amv.Generation,
-		Message:            "This is umimplemented.",
-	}
-}
-
-type IconValidator struct{}
-
-func (v *IconValidator) Validate(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition {
+func ValidateIcon(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition {
 	var status metav1.ConditionStatus
 	var reason, message string
 
@@ -52,9 +38,7 @@ func (v *IconValidator) Validate(ctx context.Context, conditionType string, amv 
 	}
 }
 
-type IndexImageValidator struct{}
-
-func (v *IndexImageValidator) Validate(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition {
+func ValidateIndexImage(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition {
 	ref, err := docker.ParseReference(fmt.Sprintf("//%s", amv.Spec.IndexImage))
 	if err != nil {
 		return metav1.Condition{
@@ -93,7 +77,45 @@ func (v *IndexImageValidator) Validate(ctx context.Context, conditionType string
 		Type:               conditionType,
 		Status:             metav1.ConditionTrue,
 		Reason:             "AllIsGood",
-		Message:            "Index image is 100% perfectly fine",
+		Message:            "Index image is 100% perfectly fine.",
+		ObservedGeneration: amv.Generation,
+	}
+}
+
+func ValidateNamespaces(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition {
+	targetNamespace, _, err := parseAddonOLMInstallConfig(&amv.Spec.Template.Spec)
+	if err != nil {
+		return metav1.Condition{
+			Type:               conditionType,
+			Status:             metav1.ConditionFalse,
+			Reason:             "InvalidAddonInstallSpec",
+			Message:            err.Error(),
+			ObservedGeneration: amv.Generation,
+		}
+	}
+
+	if !func() bool {
+		for _, an := range amv.Spec.Template.Spec.Namespaces {
+			if an.Name == targetNamespace {
+				return true
+			}
+		}
+		return false
+	}() {
+		return metav1.Condition{
+			Type:               conditionType,
+			Status:             metav1.ConditionFalse,
+			Reason:             "TargetNamespaceNotInNamespacesList",
+			Message:            "TargetNamespace must be one of the listed namespaces.",
+			ObservedGeneration: amv.Generation,
+		}
+	}
+
+	return metav1.Condition{
+		Type:               conditionType,
+		Status:             metav1.ConditionTrue,
+		Reason:             "NamespacesAreValid",
+		Message:            "Namespaces and TargetNamespace are valid.",
 		ObservedGeneration: amv.Generation,
 	}
 }

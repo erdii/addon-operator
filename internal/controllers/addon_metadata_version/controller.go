@@ -26,9 +26,7 @@ func (r *AddonMetadataVersionReconciler) SetupWithManager(mgr ctrl.Manager) erro
 		Complete(r)
 }
 
-type amvValidator interface {
-	Validate(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition
-}
+type syncValidator func(ctx context.Context, conditionType string, amv *addonsv1alpha1.AddonMetadataVersion) metav1.Condition
 
 // AddonMetadataVersionReconciler/Controller entrypoint
 func (r *AddonMetadataVersionReconciler) Reconcile(
@@ -42,14 +40,14 @@ func (r *AddonMetadataVersionReconciler) Reconcile(
 	}
 	log.Info("reconcile", "amv", amv)
 
-	validators := map[string]amvValidator{
-		"CVSValid":        &addonsv1alpha1helpers.CVSValidator{},
-		"IconValid":       &addonsv1alpha1helpers.IconValidator{},
-		"IndexImageValid": &addonsv1alpha1helpers.IndexImageValidator{},
+	syncValidators := map[string]syncValidator{
+		"IconValid":       addonsv1alpha1helpers.ValidateIcon,
+		"IndexImageValid": addonsv1alpha1helpers.ValidateIndexImage,
+		"NamespacesValid": addonsv1alpha1helpers.ValidateNamespaces,
 	}
 
 	newConditions := false
-	for conditionType, _ := range validators {
+	for conditionType := range syncValidators {
 		condition := meta.FindStatusCondition(amv.Status.Conditions, conditionType)
 		if condition == nil {
 			meta.SetStatusCondition(&amv.Status.Conditions, metav1.Condition{
@@ -67,13 +65,13 @@ func (r *AddonMetadataVersionReconciler) Reconcile(
 		}, r.Status().Update(ctx, amv)
 	}
 
-	for conditionType, validator := range validators {
-		// No need to check for nil values because to previous step ensures that all conditions are present
+	for conditionType, validator := range syncValidators {
+		// No need to check for nil values because the previous step ensures that all conditions are already present
 		condition := meta.FindStatusCondition(amv.Status.Conditions, conditionType)
 		if condition.ObservedGeneration == amv.Generation {
 			continue
 		}
-		updatedCondition := validator.Validate(ctx, conditionType, amv)
+		updatedCondition := validator(ctx, conditionType, amv)
 		meta.SetStatusCondition(&amv.Status.Conditions, updatedCondition)
 	}
 
